@@ -26,3 +26,8 @@ export const isIntegerKey = (key: unknown) => {
 const hasOwnProperty = Object.prototype.hasOwnProperty
 
 export const hasOwn = (val: object, key: string | symbol): key is keyof typeof val => hasOwnProperty.call(val, key)
+
+// 空函数
+export const NOOP = () => {}
+
+

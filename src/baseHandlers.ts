@@ -1,5 +1,5 @@
 import {enableTracking, pauseTracking, track, trigger} from "./effect.js";
-import {isObject, hasChanged, isArray, isSymbol, extend} from "./utils.js";
+import {isObject, hasChanged, isArray, isSymbol, extend, isIntegerKey, hasOwn} from "./utils.js";
 import {reactive, ReactiveFlags, type Target, reactiveMap, readonlyMap, toRaw, readonly} from "./reactive.js";
 import {TrackOpTypes, TriggerOpTypes} from "./operations.js";
 
@@ -103,42 +103,25 @@ const shallowReadonlyGet = createGetter(true, true)
 
 function createSetter(shallow = false){
     return function  set(target: Record<string | symbol, unknown>, key: string | symbol, value: unknown, receiver: object):boolean {
-        // 触发更新
-        // 判断是ADD还是SET，而且还要判断设置的值是否一样
-        const hadKey = target.hasOwnProperty(key)
 
-        const type = hadKey ? TriggerOpTypes.SET : TriggerOpTypes.ADD;
-
-        // 如果是数组获取修改之前的长度
-        let oldLen = isArray(target) ? target.length : 0
-
-        // target隐式any类型
         let oldValue = target[key]
 
-        // if (!hadKey){
-        //     trigger(target, TriggerOpTypes.ADD, key);
-        // }else if (hasChanged(value, oldValue)){
-        //     trigger(target, TriggerOpTypes.SET, key);
-        // }
+        // 判断动作是ADD or DELETE
+        // 如果目标是数组，并且key是一个有效的数组索引，需要判断key是否小于数组的长度
+        // 如果是非数组对象，我们就判断是否有这个key
+        const hadKey = isArray(target) && isIntegerKey(key) ?
+            Number(key) < target.length :
+            hasOwn(target, key)
 
-        const result = Reflect.set(target, key, value, receiver);
-        if (!result){
-            return result
-        }
+        const result = Reflect.set(target, key, value, receiver)
 
-        // 获取数组修改之后的长度
-        const newLen = isArray(target) ? target.length : 0
-
-        if (hasChanged(value, oldValue) || type === TriggerOpTypes.ADD){
-            trigger(target, type, key)
-            if (isArray(target) && oldLen != newLen){
-                if (key !== 'length'){
-                    trigger(target, TriggerOpTypes.SET, 'length')
-                }else {
-                    for(let i = newLen; i < oldLen; i++){
-                        trigger(target, TriggerOpTypes.DELETE, i + '')
-                    }
-                }
+        if (target === toRaw(receiver)){
+            if (!hadKey) {
+                // 添加
+                trigger(target, TriggerOpTypes.ADD, key, value)
+            }else if (hasChanged(value, oldValue)){
+                // 修改
+                trigger(target, TriggerOpTypes.SET, key, value, oldValue)
             }
         }
 

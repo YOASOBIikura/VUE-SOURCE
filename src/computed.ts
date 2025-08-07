@@ -2,6 +2,7 @@ import {isFunction, NOOP} from "./utils";
 import {effect, type ReactiveEffect, track, trigger} from "./effect";
 import {ReactiveFlags, toRaw} from "./reactive";
 import {TrackOpTypes, TriggerOpTypes} from "./operations";
+import type {Ref} from "./ref";
 
 export type ComputedGetter<T> = (ctx?:any) => T
 export type ComputedSetter<T> = (v: T) => void
@@ -11,9 +12,7 @@ export interface WriteableComputedOptions<T>{
     set: ComputedSetter<T>
 }
 
-export interface Ref<T = any> {
-    value: T
-}
+
 
 export interface WritableComputedRef<T> extends Ref<T> { // 有一个可写的value
     readonly effect: ReactiveEffect<T>

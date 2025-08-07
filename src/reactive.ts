@@ -70,6 +70,17 @@ export function shallowReactive<T extends Target>(target: T): T {
     return createReactiveObject(target, false, shallowReactiveHandlers)
 }
 
+export function isReadonly(value: any): value is Target {
+    return !!(value && value[ReactiveFlags.IS_READONLY])
+}
+
+export function isReactive(value: any): boolean {
+    if (isReadonly(value)){
+        return isReactive(value[ReactiveFlags.RAW])
+    }
+    return !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
+}
+
 export const enum ReactiveFlags {
     IS_REACTIVE = '__v_isReactive',
     IS_READONLY = '__v_isReadonly',
